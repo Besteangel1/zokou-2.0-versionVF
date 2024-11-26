@@ -1,23 +1,38 @@
-FROM node:lts-buster
+name: Node.js CI
 
-RUN apt-get update && \
-  apt-get install -y \
-  ffmpeg \
-  imagemagick \
-  webp && \
-  apt-get upgrade -y && \
-  rm -rf /var/lib/apt/lists/*
-  
-RUN git clone https://github.com/Luffy2ndAccount/zokou-2.0-versionVF /root/my_app
-WORKDIR /root/my_app/
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */4 * * *'
 
+jobs:
+  build:
 
-COPY package.json .
-RUN npm install pm2 -g
-RUN npm install
+    runs-on: ubuntu-latest
 
-COPY . .
+    strategy:
+      matrix:
+        node-version: [20.x]
 
-EXPOSE 8000
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-CMD ["npm","run","web"]
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install dependencies
+      run: |
+        npm install -g pm2
+        npm install
+
+    - name: Start application with timeout
+      run: |
+        timeout 14520s npm run zokou
